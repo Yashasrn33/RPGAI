@@ -1,0 +1,27 @@
+# FastAPI and ASGI server
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Google AI SDKs
+google-genai==1.0.0
+google-cloud-texttospeech==2.16.0
+
+# Data validation and settings
+pydantic==2.5.3
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+
+# Database
+aiosqlite==0.19.0
+
+# WebSocket support (included with uvicorn[standard])
+websockets==12.0
+
+# Utilities
+tenacity==8.2.3
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+
