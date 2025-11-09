@@ -66,3 +66,5 @@ unity/*.user
 unity/*.unityproj
 unity/*.booproj
 
+gcp-key.json/rpgai-477620-961c578d1635.json
+server/credentials/rpgai-477620-961c578d1635.json

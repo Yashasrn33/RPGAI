@@ -8,14 +8,14 @@ from typing import AsyncGenerator, Dict, Any, List
 from google import genai
 from google.genai import types
 
-from schemas import (
+from .schemas import (
     NPC_DIALOGUE_SCHEMA,
     SYSTEM_INSTRUCTION,
     ChatTurnRequest,
     NpcDialogueResponse,
     MemoryEntry
 )
-from settings import settings
+from .settings import settings
 
 logger = logging.getLogger(__name__)
 
