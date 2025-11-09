@@ -257,6 +257,17 @@ class TTSResponse(BaseModel):
     audio_url: str
 
 
+class STTRequest(BaseModel):
+    """STT transcription request."""
+    language_code: str = Field(default="en-US", description="Language code for transcription")
+
+
+class STTResponse(BaseModel):
+    """STT transcription response."""
+    text: str = Field(description="Transcribed text from audio")
+    confidence: Optional[float] = Field(default=None, description="Transcription confidence (0-1)")
+
+
 # ============================================================================
 # SYSTEM INSTRUCTION (for Gemini)
 # ============================================================================

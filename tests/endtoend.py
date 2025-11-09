@@ -16,7 +16,7 @@ from pathlib import Path
 # Configuration
 BASE_URL = "http://localhost:8000"
 WS_URL = "ws://localhost:8000/v1/chat.stream"
-AUDIO_FILE = "/Users/yashas/Desktop/RPGAI/audio_file.wav"  # Your recorded audio file
+AUDIO_FILE = "/Users/yashas/Desktop/RPGAI/recording.wav"  # Your recorded audio file
 
 # Test NPC persona
 NPC_PERSONA = {

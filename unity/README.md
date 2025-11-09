@@ -138,6 +138,160 @@ public class DialogueWithVoice : MonoBehaviour
 }
 ```
 
+### With Voice Input (Speech-to-Text)
+
+```csharp
+using RPGAI.Audio;
+using RPGAI.Dialogue;
+using RPGAI.Net;
+using UnityEngine;
+using System.Threading.Tasks;
+
+public class VoiceInputDialogue : MonoBehaviour
+{
+    [SerializeField] private DialogueController dialogue;
+    [SerializeField] private string sttEndpoint = "http://localhost:8000/v1/voice/stt";
+    
+    private AudioClip recordedClip;
+    private string microphoneDevice;
+    
+    private void Start()
+    {
+        // Get default microphone
+        if (Microphone.devices.Length > 0)
+        {
+            microphoneDevice = Microphone.devices[0];
+            Debug.Log($"Using microphone: {microphoneDevice}");
+        }
+    }
+    
+    // Call this when player presses "talk" button
+    public void StartRecording()
+    {
+        if (string.IsNullOrEmpty(microphoneDevice))
+        {
+            Debug.LogError("No microphone detected");
+            return;
+        }
+        
+        // Record for up to 10 seconds at 16kHz
+        recordedClip = Microphone.Start(microphoneDevice, false, 10, 16000);
+        Debug.Log("Recording started...");
+    }
+    
+    // Call this when player releases "talk" button
+    public async Task StopRecordingAndSend(string npcId, NpcPersona persona)
+    {
+        if (!Microphone.IsRecording(microphoneDevice))
+        {
+            Debug.LogWarning("Not recording");
+            return;
+        }
+        
+        int position = Microphone.GetPosition(microphoneDevice);
+        Microphone.End(microphoneDevice);
+        
+        Debug.Log("Recording stopped");
+        
+        // Trim the audio clip to actual recorded length
+        float[] samples = new float[position * recordedClip.channels];
+        recordedClip.GetData(samples, 0);
+        
+        // Convert to WAV bytes
+        byte[] wavData = ConvertToWAV(samples, recordedClip.frequency, recordedClip.channels);
+        
+        // Send to STT endpoint
+        string transcribedText = await TranscribeAudio(wavData);
+        
+        if (!string.IsNullOrEmpty(transcribedText))
+        {
+            Debug.Log($"Player said: {transcribedText}");
+            
+            // Send transcribed text to dialogue system
+            await dialogue.SendPlayerMessage(npcId, transcribedText, persona);
+        }
+    }
+    
+    private async Task<string> TranscribeAudio(byte[] audioData)
+    {
+        try
+        {
+            // Create multipart form data
+            WWWForm form = new WWWForm();
+            form.AddBinaryData("audio", audioData, "recording.wav", "audio/wav");
+            form.AddField("language_code", "en-US");
+            
+            using (var request = UnityWebRequest.Post(sttEndpoint, form))
+            {
+                var operation = request.SendWebRequest();
+                
+                while (!operation.isDone)
+                {
+                    await Task.Yield();
+                }
+                
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    Debug.LogError($"STT request failed: {request.error}");
+                    return null;
+                }
+                
+                // Parse response
+                var response = JsonUtility.FromJson<STTResponse>(request.downloadHandler.text);
+                return response.text;
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"STT error: {e.Message}");
+            return null;
+        }
+    }
+    
+    private byte[] ConvertToWAV(float[] samples, int frequency, int channels)
+    {
+        // Simple WAV file conversion
+        int sampleCount = samples.Length;
+        int byteCount = sampleCount * 2; // 16-bit samples
+        
+        using (var memoryStream = new System.IO.MemoryStream())
+        using (var writer = new System.IO.BinaryWriter(memoryStream))
+        {
+            // WAV header
+            writer.Write(new char[4] { 'R', 'I', 'F', 'F' });
+            writer.Write(36 + byteCount);
+            writer.Write(new char[4] { 'W', 'A', 'V', 'E' });
+            writer.Write(new char[4] { 'f', 'm', 't', ' ' });
+            writer.Write(16); // Subchunk1Size
+            writer.Write((ushort)1); // AudioFormat (PCM)
+            writer.Write((ushort)channels);
+            writer.Write(frequency);
+            writer.Write(frequency * channels * 2); // ByteRate
+            writer.Write((ushort)(channels * 2)); // BlockAlign
+            writer.Write((ushort)16); // BitsPerSample
+            writer.Write(new char[4] { 'd', 'a', 't', 'a' });
+            writer.Write(byteCount);
+            
+            // Write samples
+            foreach (float sample in samples)
+            {
+                short intSample = (short)(sample * short.MaxValue);
+                writer.Write(intSample);
+            }
+            
+            return memoryStream.ToArray();
+        }
+    }
+    
+    [System.Serializable]
+    private class STTResponse
+    {
+        public string text;
+        public float confidence;
+    }
+}
+```
+
 ### Context Integration
 
 ```csharp
@@ -293,16 +447,27 @@ private void ApplyEmotion(Emotion emotion)
 - Verify backend TTS endpoint is reachable
 - Check GCP credentials are configured on backend
 
+### Voice input (STT) not working
+- Check microphone permissions on mobile (see Platform Notes)
+- Verify backend STT endpoint is reachable: `http://localhost:8000/v1/voice/stt`
+- Ensure GCP Speech-to-Text API is enabled in your GCP project
+- Check audio format is supported (WAV, MP3, FLAC, OGG, WEBM)
+- Verify microphone is detected: `Microphone.devices` should not be empty
+
 ## Platform Notes
 
 ### WebGL
 - WebSockets work natively (browser handles them)
 - Don't call `DispatchMessages()` on WebGL
 - Audio streaming may have CORS issues (serve from same domain)
+- Microphone access requires HTTPS and user permission
 
 ### Mobile (iOS/Android)
 - Use HTTPS/WSS for production (not HTTP/WS)
-- Request microphone permissions if adding voice input
+- **Microphone permissions required for STT:**
+  - iOS: Add `NSMicrophoneUsageDescription` to Info.plist
+  - Android: Add `<uses-permission android:name="android.permission.RECORD_AUDIO"/>` to AndroidManifest.xml
+  - Request permissions at runtime: `Application.RequestUserAuthorization(UserAuthorization.Microphone)`
 - Test TTS audio formats (MP3 works on most platforms)
 
 ### Desktop
