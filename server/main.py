@@ -8,7 +8,7 @@ import time
 from contextlib import asynccontextmanager
 from typing import Dict, Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, status
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, status, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
@@ -19,11 +19,14 @@ from .schemas import (
     NpcMemoryWrite,
     TTSRequest,
     TTSResponse,
+    STTRequest,
+    STTResponse,
     MemoryEntry
 )
 from .memory import memory_dao
 from .llm_client import generate_npc_json_stream
 from .tts import synthesize_ssml
+from .stt import transcribe_audio
 from .settings import settings
 
 # Configure logging
@@ -305,6 +308,69 @@ async def text_to_speech(request: TTSRequest) -> TTSResponse:
         raise
     except Exception as e:
         logger.error(f"TTS error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+# ============================================================================
+# HTTP: SPEECH-TO-TEXT
+# ============================================================================
+
+@app.post("/v1/voice/stt")
+async def speech_to_text(
+    audio: UploadFile = File(...),
+    language_code: str = Form(default="en-US")
+) -> STTResponse:
+    """
+    Transcribe audio to text using Google Cloud Speech-to-Text.
+    
+    Multipart form data:
+    - audio: Audio file (wav, mp3, flac, ogg, webm)
+    - language_code: Language code (default: en-US)
+    
+    Returns:
+    {
+        "text": "Hello, I would like to buy some potions",
+        "confidence": 0.95
+    }
+    """
+    try:
+        # Read audio content
+        audio_content = await audio.read()
+        
+        if not audio_content:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Empty audio file"
+            )
+        
+        # Detect file format from filename
+        file_format = "wav"  # Default
+        if audio.filename:
+            extension = audio.filename.split(".")[-1].lower()
+            if extension in ["mp3", "flac", "ogg", "webm", "wav"]:
+                file_format = extension
+        
+        logger.info(f"Transcribing audio: {audio.filename} ({len(audio_content)} bytes, format: {file_format})")
+        
+        # Transcribe
+        transcribed_text = transcribe_audio(audio_content, file_format, language_code)
+        
+        if not transcribed_text:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Speech-to-text transcription failed"
+            )
+        
+        logger.info(f"Transcription result: '{transcribed_text}'")
+        return STTResponse(text=transcribed_text)
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"STT error: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

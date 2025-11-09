@@ -228,12 +228,65 @@ elderly_wise    → en-GB-Neural2-B   (weathered, sage)
 
 **Unity Playback:**
 ```csharp
+await tts.PlayTTS(response.utterance, "en-US-Neural2-C");
+```
+
+---
+
+### 8. **Voice Input (STT)** 🎤
+
+Google Cloud Speech-to-Text for player voice input:
+
+**Supported Formats:**
+- WAV (Linear16, 16kHz recommended)
+- MP3 (auto-detected)
+- FLAC (lossless)
+- OGG Opus (web-friendly)
+- WEBM Opus (streaming)
+
+**Features:**
+- Automatic punctuation
+- Confidence scoring
+- Multi-language support
+- Real-time transcription
+
+**Unity Integration:**
+```csharp
+// Record from microphone
+Microphone.Start(device, false, 10, 16000);
+
+// Stop and convert
+byte[] wavData = ConvertToWAV(samples, frequency, channels);
+
+// Transcribe
+WWWForm form = new WWWForm();
+form.AddBinaryData("audio", wavData, "recording.wav");
+var request = UnityWebRequest.Post(sttEndpoint, form);
+await request.SendWebRequest();
+
+// Get transcribed text
+var response = JsonUtility.FromJson<STTResponse>(request.downloadHandler.text);
+string playerText = response.text;
+
+// Use in dialogue
+await dialogue.SendPlayerMessage(npcId, playerText, persona);
+```
+
+**Complete Voice Workflow:**
+1. Player holds "Talk" button → Record audio
+2. Player releases button → Send to `/v1/voice/stt`
+3. Server transcribes → Returns text
+4. Unity sends text → Normal dialogue flow
+5. NPC responds → TTS plays audio
+
+**Unity Playback:**
+```csharp
 await ttsPlayer.PlayTTS(response.utterance, "en-US-Neural2-C");
 ```
 
 ---
 
-### 8. **Context-Aware Dialogue** 🌍
+### 9. **Context-Aware Dialogue** 🌍
 
 NPCs adapt responses to dynamic game state:
 
@@ -278,7 +331,7 @@ Alertness = 0.9: "Who's there?! Show yourself!"
 
 ---
 
-### 9. **Production-Ready Architecture** 🏗️
+### 10. **Production-Ready Architecture** 🏗️
 
 **FastAPI Backend:**
 - Async/await for non-blocking I/O
@@ -374,6 +427,7 @@ Behavior: Can flee if pressured too much
 - Framework: FastAPI
 - LLM: Google Gemini (gemini-2.0-flash-exp)
 - TTS: Google Cloud Text-to-Speech
+- STT: Google Cloud Speech-to-Text
 - Database: SQLite 3
 - Transport: WebSocket + HTTP
 
@@ -395,7 +449,7 @@ Behavior: Can flee if pressured too much
 ## 🚀 Future Enhancements
 
 **Planned Features:**
-- [ ] Voice input (speech-to-text)
+- [x] Voice input (speech-to-text) - **IMPLEMENTED**
 - [ ] Multi-language support
 - [ ] NPC-to-NPC conversations
 - [ ] Long-term memory (days/weeks)
@@ -425,9 +479,10 @@ Behavior: Can flee if pressured too much
 2. **Salience-Based Memory** - Important events naturally surface in context
 3. **Streaming for UX** - Typewriter effect feels more natural than waiting
 4. **Emotion-Driven TTS** - Speech prosody matches NPC emotional state
-5. **Zero Dialogue Trees** - Completely generative, no pre-written scripts
-6. **Context Integration** - Weather, time, reputation all affect responses
-7. **Production Architecture** - Not a proof-of-concept, ready to deploy
+5. **Voice Input Support** - Full speech-to-text integration for natural conversations
+6. **Zero Dialogue Trees** - Completely generative, no pre-written scripts
+7. **Context Integration** - Weather, time, reputation all affect responses
+8. **Production Architecture** - Not a proof-of-concept, ready to deploy
 
 ---
 

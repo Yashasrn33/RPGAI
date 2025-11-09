@@ -6,6 +6,7 @@ python-multipart==0.0.6
 # Google AI SDKs
 google-genai==1.0.0
 google-cloud-texttospeech==2.16.0
+google-cloud-speech==2.26.0
 
 # Data validation and settings
 pydantic==2.5.3

@@ -49,7 +49,7 @@ rpgai/
 
 - **Python 3.9+**
 - **Gemini API Key** ([Get one here](https://ai.google.dev/))
-- **Google Cloud Account** with Text-to-Speech API enabled
+- **Google Cloud Account** with Text-to-Speech and Speech-to-Text APIs enabled
 - **Unity 2021.3+** (for client-side integration)
 
 ### 1. Backend Setup
@@ -132,11 +132,20 @@ TOP_P=0.9
 MAX_OUTPUT_TOKENS=220
 ```
 
-### Google Cloud TTS Setup
+### Google Cloud Audio APIs Setup
 
-1. Create a GCP project and enable the **Text-to-Speech API**
-2. Create a service account and download the JSON key
-3. Set `GOOGLE_APPLICATION_CREDENTIALS` to the path of your JSON key
+1. Create a GCP project and enable:
+   - **Text-to-Speech API** (for NPC voice output)
+   - **Speech-to-Text API** (for player voice input)
+2. Create a service account with appropriate permissions
+3. Download the JSON service account key
+4. Set `GOOGLE_APPLICATION_CREDENTIALS` to the path of your JSON key
+
+```bash
+# Enable APIs (using gcloud CLI)
+gcloud services enable texttospeech.googleapis.com
+gcloud services enable speech.googleapis.com
+```
 
 ---
 
@@ -253,6 +262,47 @@ Content-Type: application/json
 - `en-US-Neural2-D` - Masculine, deep
 - `en-US-Neural2-A` - Masculine, casual
 - `en-GB-Neural2-B` - Elderly, wise
+
+---
+
+### HTTP: Speech-to-Text
+
+```bash
+POST /v1/voice/stt
+Content-Type: multipart/form-data
+
+# Form fields:
+# - audio: Audio file (WAV, MP3, FLAC, OGG, WEBM)
+# - language_code: Language code (default: en-US)
+
+# Response
+{
+  "text": "Hello, I would like to buy some potions",
+  "confidence": 0.95
+}
+```
+
+**Usage Example (curl)**:
+```bash
+# Record audio (on macOS/Linux)
+ffmpeg -f avfoundation -i ":0" -t 5 recording.wav
+
+# Or on Windows
+# ffmpeg -f dshow -i audio="Microphone" -t 5 recording.wav
+
+# Send to STT endpoint
+curl -X POST http://localhost:8000/v1/voice/stt \
+  -F "audio=@recording.wav" \
+  -F "language_code=en-US"
+```
+
+**Workflow with Voice Input**:
+1. Player records audio in Unity using `Microphone.Start()`
+2. Unity converts audio to WAV/MP3 and sends to `/v1/voice/stt`
+3. Server transcribes audio to text using GCP Speech-to-Text
+4. Unity receives transcribed text and uses it as `player_text` in dialogue request
+
+See Unity README for complete voice input implementation example.
 
 ---
 
