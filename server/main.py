@@ -14,17 +14,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from pathlib import Path
 
-from schemas import (
+from .schemas import (
     ChatTurnRequest,
     NpcMemoryWrite,
     TTSRequest,
     TTSResponse,
     MemoryEntry
 )
-from memory import memory_dao
-from llm_client import generate_npc_json_stream
-from tts import synthesize_ssml
-from settings import settings
+from .memory import memory_dao
+from .llm_client import generate_npc_json_stream
+from .tts import synthesize_ssml
+from .settings import settings
 
 # Configure logging
 logging.basicConfig(

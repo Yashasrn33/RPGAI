@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  rpgai:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-key.json
+      - LOG_LEVEL=INFO
+      - DB_PATH=/app/data/npc_memory.db
+    volumes:
+      - ./media:/app/media
+      - ./data:/app/data
+      - ./gcp-key.json/rpgai-477620-961c578d1635.json:/app/gcp-key.json:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

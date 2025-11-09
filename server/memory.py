@@ -10,8 +10,8 @@ from contextlib import contextmanager
 from pathlib import Path
 import logging
 
-from schemas import NpcMemoryWrite, MemoryEntry
-from settings import settings
+from .schemas import NpcMemoryWrite, MemoryEntry
+from .settings import settings
 
 logger = logging.getLogger(__name__)
 

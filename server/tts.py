@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Optional
 from google.cloud import texttospeech
 
-from schemas import Emotion, SSMLStyle
-from settings import settings
+from .schemas import Emotion, SSMLStyle
+from .settings import settings
 
 logger = logging.getLogger(__name__)
 

@@ -117,7 +117,6 @@ NPC_DIALOGUE_SCHEMA = {
                     },
                     "private": {
                         "type": "boolean",
-                        "default": True,
                         "description": "Whether only this NPC knows this"
                     }
                 }
@@ -134,10 +133,6 @@ NPC_DIALOGUE_SCHEMA = {
                     "event_type": {
                         "type": "string",
                         "description": "Type of world event (e.g., 'crime_witnessed')"
-                    },
-                    "payload": {
-                        "type": "object",
-                        "description": "Event-specific data"
                     }
                 }
             },
@@ -158,8 +153,7 @@ NPC_DIALOGUE_SCHEMA = {
             },
             "description": "TTS voice configuration hints"
         }
-    },
-    "additionalProperties": False
+    }
 }
 
 
